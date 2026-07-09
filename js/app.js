@@ -9,15 +9,15 @@
   const ALL_GROUPS = ['All', ...PRODUCT_GROUPS];
   const DEFAULT_YEARS = ['YTD 2026', '2025', '2024', '2023'];
 
-  // Sequential single-hue ramps (validated reference palette). In dark mode the
-  // anchor flips: near-zero recedes toward the dark surface.
+  // Green -> yellow -> red scale: low revenue is green, high revenue is red.
+  // The dark ramp uses slightly brighter steps for the dark basemap.
   const HEAT_GRADIENT_LIGHT = {
-    0.05: '#cde2fb', 0.2: '#9ec5f4', 0.4: '#5598e7',
-    0.6: '#2a78d6', 0.8: '#1c5cab', 1.0: '#0d366b',
+    0.05: '#0ca30c', 0.25: '#7fb70a', 0.45: '#e3b400',
+    0.65: '#f08c00', 0.85: '#e04b26', 1.0: '#c81e1e',
   };
   const HEAT_GRADIENT_DARK = {
-    0.05: '#0d366b', 0.2: '#184f95', 0.4: '#256abf',
-    0.6: '#3987e5', 0.8: '#86b6ef', 1.0: '#cde2fb',
+    0.05: '#12b512', 0.25: '#8fc70e', 0.45: '#f2c200',
+    0.65: '#ff9a1f', 0.85: '#f0552b', 1.0: '#e03131',
   };
 
   const TILES_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
@@ -120,11 +120,11 @@
   // divides intensity by 2^(maxZoom - zoom)); pin it to the default US-wide
   // zoom so heat colors encode relative revenue at the continental view.
   const heatLayer = L.heatLayer([], {
-    radius: 38,
-    blur: 26,
+    radius: 55,
+    blur: 34,
     maxZoom: US_ZOOM,
     max: 1.0,
-    minOpacity: 0.2,
+    minOpacity: 0.25,
     gradient: darkMode.matches ? HEAT_GRADIENT_DARK : HEAT_GRADIENT_LIGHT,
   }).addTo(map);
   const markerLayer = L.layerGroup().addTo(map);
