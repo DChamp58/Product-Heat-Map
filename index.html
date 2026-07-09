@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Sales Heat Map</title>
+  <link rel="stylesheet" href="vendor/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <header class="sidebar-header">
+        <h1>Product Sales Heat Map</h1>
+        <p class="subtitle">US customer revenue by product group</p>
+      </header>
+
+      <div class="sidebar-body">
+        <section class="control-section">
+          <button id="btn-upload" class="btn btn-primary btn-block" type="button">
+            + Add company Excel files
+          </button>
+          <input id="file-input" type="file" accept=".xlsx,.xls,.xlsm" multiple hidden>
+        </section>
+
+        <section class="control-section">
+          <h2 class="control-label">Year</h2>
+          <div id="year-pills" class="pill-row" role="group" aria-label="Year"></div>
+        </section>
+
+        <section class="control-section">
+          <h2 class="control-label">Product group</h2>
+          <div id="group-pills" class="pill-row" role="group" aria-label="Product group"></div>
+        </section>
+
+        <section class="control-section">
+          <div class="summary-row">
+            <h2 class="control-label">Companies</h2>
+            <span id="summary" class="summary-text"></span>
+          </div>
+          <ul id="company-list" class="company-list"></ul>
+          <p id="empty-hint" class="empty-hint">
+            No companies yet. Click <strong>Add company Excel files</strong> and select one
+            or more sheets (one per company). You'll be asked for each company's address.
+          </p>
+        </section>
+      </div>
+
+      <footer class="sidebar-footer">
+        <button id="btn-export" class="btn btn-ghost" type="button">Export data</button>
+        <button id="btn-import" class="btn btn-ghost" type="button">Import data</button>
+        <input id="import-input" type="file" accept=".json,application/json" hidden>
+        <button id="btn-clear" class="btn btn-ghost btn-danger" type="button">Clear all</button>
+      </footer>
+    </aside>
+
+    <main id="map" aria-label="Heat map of company sales"></main>
+  </div>
+
+  <!-- Company address / location modal -->
+  <div id="modal-overlay" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <header class="modal-header">
+        <h2 id="modal-title">Company location</h2>
+        <span id="modal-progress" class="modal-progress"></span>
+      </header>
+
+      <div class="modal-body">
+        <p id="modal-file" class="modal-file"></p>
+        <p id="modal-note" class="modal-note" hidden></p>
+
+        <label class="field">
+          <span class="field-label">Company name</span>
+          <input id="modal-name" type="text" autocomplete="off" spellcheck="false">
+        </label>
+
+        <label class="field">
+          <span class="field-label">Address</span>
+          <div class="field-row">
+            <input id="modal-address" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="e.g. 123 Main St, Savannah, GA — or “32.08, -81.09”">
+            <button id="modal-search" class="btn btn-secondary" type="button">Search</button>
+          </div>
+        </label>
+
+        <div id="modal-results" class="geo-results" hidden></div>
+        <p id="modal-error" class="modal-error" hidden></p>
+
+        <div class="location-row">
+          <span id="modal-location" class="location-text">No location set yet</span>
+          <button id="modal-pick" class="btn btn-ghost" type="button">Pick on map</button>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button id="modal-skip" class="btn btn-ghost" type="button">Skip this file</button>
+        <button id="modal-save" class="btn btn-primary" type="button" disabled>Save company</button>
+      </footer>
+    </div>
+  </div>
+
+  <div id="pick-banner" class="pick-banner" hidden>
+    Click the map to place <strong id="pick-name"></strong> — <button id="pick-cancel" type="button">cancel</button>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="vendor/leaflet.js"></script>
+  <script src="vendor/leaflet-heat.js"></script>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/geocode.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
