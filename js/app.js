@@ -39,8 +39,27 @@
     '#3987e5', '#199e70', '#c98500', '#008300',
     '#9085e9', '#e66767', '#d55181', '#d95926',
   ];
-  const PIE_OTHER_COLOR = '#898781';
-  const PIE_MAX_SLICES = 7; // beyond this, remaining companies fold into "Other"
+  // Mix a hex color toward white (t > 0) or black (t < 0) — used to extend
+  // the 8-slot palette for pies with more companies than base colors.
+  function shadeColor(hex, t) {
+    const n = parseInt(hex.slice(1), 16);
+    const mix = (c) =>
+      Math.round(t >= 0 ? c + (255 - c) * t : c * (1 + t));
+    const r = mix((n >> 16) & 255);
+    const g = mix((n >> 8) & 255);
+    const b = mix(n & 255);
+    return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
+  }
+
+  function pieColor(i) {
+    const palette = darkMode.matches ? PIE_COLORS_DARK : PIE_COLORS_LIGHT;
+    const base = palette[i % palette.length];
+    const ring = Math.floor(i / palette.length);
+    if (ring === 0) return base;
+    if (ring === 1) return shadeColor(base, darkMode.matches ? -0.35 : 0.45);
+    if (ring === 2) return shadeColor(base, darkMode.matches ? 0.4 : -0.35);
+    return shadeColor(base, darkMode.matches ? -0.6 : 0.7);
+  }
 
   const fmtUSD = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -398,25 +417,14 @@
         .filter((s) => s.value > 0)
         .sort((a, b) => b.value - a.value);
     }
-    const shares = companies
+    return companies
       .map((c) => ({
         name: c.name,
         value: Math.max(valueFor(c, state.group, state.year), 0),
       }))
       .filter((s) => s.value > 0)
-      .sort((a, b) => b.value - a.value);
-    const top = shares
-      .slice(0, PIE_MAX_SLICES)
-      .map((s, i) => ({ ...s, color: palette[i] }));
-    const rest = shares.slice(PIE_MAX_SLICES);
-    if (rest.length > 0) {
-      top.push({
-        name: `Other (${rest.length})`,
-        value: rest.reduce((acc, s) => acc + s.value, 0),
-        color: PIE_OTHER_COLOR,
-      });
-    }
-    return top;
+      .sort((a, b) => b.value - a.value)
+      .map((s, i) => ({ ...s, color: pieColor(i) }));
   }
 
   // Annular sector path from angle a0 to a1 (radians).

@@ -321,7 +321,7 @@ body.picking-session .sidebar {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 168px;
+  max-height: 42vh;
   overflow-y: auto;
 }
 
