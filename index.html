@@ -54,7 +54,14 @@
       </footer>
     </aside>
 
-    <main id="map" aria-label="Heat map of company sales"></main>
+    <main class="map-wrap">
+      <div id="map" aria-label="Heat map of company sales"></div>
+      <aside id="pie-panel" class="pie-panel" hidden>
+        <h2 id="pie-title" class="pie-title"></h2>
+        <svg id="pie-svg" viewBox="0 0 140 140" role="img" aria-label="Revenue share"></svg>
+        <ul id="pie-legend" class="pie-legend"></ul>
+      </aside>
+    </main>
   </div>
 
   <!-- Company address / location modal -->

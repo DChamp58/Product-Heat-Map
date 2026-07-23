@@ -265,10 +265,102 @@ body.picking-session .sidebar {
 /* ------------------------------------------------------------------ */
 /* Map                                                                  */
 /* ------------------------------------------------------------------ */
-#map {
+.map-wrap {
   flex: 1;
-  height: 100%;
+  position: relative;
+  min-width: 0;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
   background: var(--surface-2);
+}
+
+/* Pie panel (share of revenue for the current selection) */
+.pie-panel {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  width: 248px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.pie-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+#pie-svg {
+  display: block;
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 8px;
+  color: var(--text-primary);
+}
+
+.pie-center-value {
+  font-size: 15px;
+  font-weight: 700;
+  fill: currentColor;
+}
+
+.pie-center-label {
+  font-size: 7.5px;
+  fill: var(--text-muted);
+}
+
+.pie-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 168px;
+  overflow-y: auto;
+}
+
+.pie-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 0;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.pie-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.pie-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pie-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.pie-pct {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  width: 34px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 #map.picking { cursor: crosshair; }
@@ -525,5 +617,8 @@ body.picking-session .sidebar {
     border-right: none;
     border-bottom: 1px solid var(--hairline);
   }
-  #map { min-height: 54vh; min-height: 54dvh; }
+  .map-wrap { min-height: 54vh; min-height: 54dvh; }
+  .pie-panel { width: 196px; top: 10px; right: 10px; }
+  #pie-svg { width: 116px; height: 116px; }
+  .pie-legend { max-height: 110px; }
 }

@@ -29,6 +29,19 @@
   const US_CENTER = [39.5, -96.35];
   const US_ZOOM = 4;
 
+  // Categorical palette for pie slices (reference dataviz palette; fixed
+  // order). "Other" is a reserved neutral, never a series color.
+  const PIE_COLORS_LIGHT = [
+    '#2a78d6', '#1baf7a', '#eda100', '#008300',
+    '#4a3aa7', '#e34948', '#e87ba4', '#eb6834',
+  ];
+  const PIE_COLORS_DARK = [
+    '#3987e5', '#199e70', '#c98500', '#008300',
+    '#9085e9', '#e66767', '#d55181', '#d95926',
+  ];
+  const PIE_OTHER_COLOR = '#898781';
+  const PIE_MAX_SLICES = 7; // beyond this, remaining companies fold into "Other"
+
   const fmtUSD = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -54,6 +67,10 @@
   const dom = {
     fileInput: el('file-input'),
     btnUpload: el('btn-upload'),
+    piePanel: el('pie-panel'),
+    pieTitle: el('pie-title'),
+    pieSvg: el('pie-svg'),
+    pieLegend: el('pie-legend'),
     yearPills: el('year-pills'),
     groupPills: el('group-pills'),
     summary: el('summary'),
@@ -290,6 +307,7 @@
     syncMarkers(entries);
 
     renderCompanyList(entries);
+    renderPie();
 
     const total = entries.reduce((acc, e) => acc + e.value, 0);
     dom.summary.textContent = companies.length
@@ -350,6 +368,154 @@
         markersById.delete(id);
       }
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Pie chart (share of revenue for the current selection)
+  // ------------------------------------------------------------------
+  const fmtCompact = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  });
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  // With a specific product group selected, slices are companies (their share
+  // of that group's revenue). With "All" selected, slices are the product
+  // groups themselves, keeping each group's fixed palette slot.
+  function pieSlices() {
+    const palette = darkMode.matches ? PIE_COLORS_DARK : PIE_COLORS_LIGHT;
+    if (state.group === 'All') {
+      return PRODUCT_GROUPS.map((g, i) => ({
+        name: g,
+        value: companies.reduce(
+          (acc, c) => acc + Math.max(valueFor(c, g, state.year), 0),
+          0
+        ),
+        color: palette[i],
+      }))
+        .filter((s) => s.value > 0)
+        .sort((a, b) => b.value - a.value);
+    }
+    const shares = companies
+      .map((c) => ({
+        name: c.name,
+        value: Math.max(valueFor(c, state.group, state.year), 0),
+      }))
+      .filter((s) => s.value > 0)
+      .sort((a, b) => b.value - a.value);
+    const top = shares
+      .slice(0, PIE_MAX_SLICES)
+      .map((s, i) => ({ ...s, color: palette[i] }));
+    const rest = shares.slice(PIE_MAX_SLICES);
+    if (rest.length > 0) {
+      top.push({
+        name: `Other (${rest.length})`,
+        value: rest.reduce((acc, s) => acc + s.value, 0),
+        color: PIE_OTHER_COLOR,
+      });
+    }
+    return top;
+  }
+
+  // Annular sector path from angle a0 to a1 (radians).
+  function arcPath(cx, cy, r0, r1, a0, a1) {
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    const p = (r, a) => `${cx + r * Math.cos(a)} ${cy + r * Math.sin(a)}`;
+    return (
+      `M ${p(r1, a0)} A ${r1} ${r1} 0 ${large} 1 ${p(r1, a1)} ` +
+      `L ${p(r0, a1)} A ${r0} ${r0} 0 ${large} 0 ${p(r0, a0)} Z`
+    );
+  }
+
+  function renderPie() {
+    const slices = pieSlices();
+    const total = slices.reduce((acc, s) => acc + s.value, 0);
+    if (slices.length === 0 || total <= 0) {
+      dom.piePanel.hidden = true;
+      return;
+    }
+    dom.piePanel.hidden = false;
+
+    dom.pieTitle.textContent =
+      state.group === 'All'
+        ? `Revenue by product group — ${state.year}`
+        : `${state.group} revenue by company — ${state.year}`;
+
+    const CX = 70;
+    const CY = 70;
+    const R_OUT = 62;
+    const R_IN = 36;
+    const surface = getComputedStyle(document.body).backgroundColor;
+
+    dom.pieSvg.innerHTML = '';
+    let angle = -Math.PI / 2;
+    slices.forEach((s) => {
+      const frac = s.value / total;
+      const pct = (frac * 100).toFixed(frac < 0.1 ? 1 : 0) + '%';
+      let shape;
+      if (frac > 0.9995) {
+        // A single 100% slice: an arc path degenerates, draw a full ring.
+        shape = document.createElementNS(SVG_NS, 'circle');
+        shape.setAttribute('cx', CX);
+        shape.setAttribute('cy', CY);
+        shape.setAttribute('r', (R_OUT + R_IN) / 2);
+        shape.setAttribute('fill', 'none');
+        shape.setAttribute('stroke', s.color);
+        shape.setAttribute('stroke-width', R_OUT - R_IN);
+      } else {
+        const next = angle + frac * 2 * Math.PI;
+        shape = document.createElementNS(SVG_NS, 'path');
+        shape.setAttribute('d', arcPath(CX, CY, R_IN, R_OUT, angle, next));
+        shape.setAttribute('fill', s.color);
+        // 2px surface gap between adjacent fills
+        shape.setAttribute('stroke', surface);
+        shape.setAttribute('stroke-width', '1');
+        angle = next;
+      }
+      const title = document.createElementNS(SVG_NS, 'title');
+      title.textContent = `${s.name} — ${fmtUSD.format(s.value)} (${pct})`;
+      shape.appendChild(title);
+      dom.pieSvg.appendChild(shape);
+      s.pct = pct;
+    });
+
+    const centerValue = document.createElementNS(SVG_NS, 'text');
+    centerValue.setAttribute('x', CX);
+    centerValue.setAttribute('y', CY + 1);
+    centerValue.setAttribute('text-anchor', 'middle');
+    centerValue.setAttribute('class', 'pie-center-value');
+    centerValue.textContent = fmtCompact.format(total);
+    dom.pieSvg.appendChild(centerValue);
+
+    const centerLabel = document.createElementNS(SVG_NS, 'text');
+    centerLabel.setAttribute('x', CX);
+    centerLabel.setAttribute('y', CY + 13);
+    centerLabel.setAttribute('text-anchor', 'middle');
+    centerLabel.setAttribute('class', 'pie-center-label');
+    centerLabel.textContent = 'total';
+    dom.pieSvg.appendChild(centerLabel);
+
+    dom.pieLegend.innerHTML = '';
+    slices.forEach((s) => {
+      const li = document.createElement('li');
+      const swatch = document.createElement('span');
+      swatch.className = 'pie-swatch';
+      swatch.style.background = s.color;
+      const name = document.createElement('span');
+      name.className = 'pie-name';
+      name.textContent = s.name;
+      name.title = s.name;
+      const value = document.createElement('span');
+      value.className = 'pie-value';
+      value.textContent = fmtCompact.format(s.value);
+      const pct = document.createElement('span');
+      pct.className = 'pie-pct';
+      pct.textContent = s.pct;
+      li.append(swatch, name, value, pct);
+      dom.pieLegend.appendChild(li);
+    });
   }
 
   function renderCompanyList(entries) {
